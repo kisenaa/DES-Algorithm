@@ -1,7 +1,6 @@
-**Tugas 1 - Keamanan Informasi B - Algoritma DES***
+**Tugas 1 - Keamanan Informasi B - Algoritma DES**
 
 Johannes Daniswara Pratama
-
 5025221276
 
 **Example Use**
