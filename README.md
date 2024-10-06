@@ -20,7 +20,7 @@ print("decrypted: ", DES.Decrypt(cipher_text = cipher_text1))                   
 print("decrypted2: ", DES.Decrypt_using_key(cipher_text = cipher_text1, key=random_key))  # output: HaloHalo  (supplied key)
 
 cipher_text2 = DES.Encrypt(b"Informatika", random_key)     # input: "Informatika" in bytes format
-print("cipher byte:", cipher_text2)                        # output: encrypted text in bytes / hdex
+print("cipher byte:", cipher_text2)                        # output: encrypted text in bytes
 print("cipher hex: ", cipher_text2.hex())                  # output: encrypted text in hex
 
 print("encrypted: ", DES.Decrypt(cipher_text = cipher_text2))
