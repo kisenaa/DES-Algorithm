@@ -239,7 +239,7 @@ class Des(__Random):
             key = reversed(key)
 
         for subkey in key:
-            new_left = right                            # Right becomes new left
+            new_left = right                               # Right becomes new left
             right = left ^ self.__feistel(right, subkey)   # XOR left with the feistel function
 
             # Update for the next round
@@ -291,7 +291,7 @@ class Des(__Random):
         encoded_blocks = self.__ECB(blocks, self.__subkey[::-1], False)
 
         result = b"".join(struct.pack(">Q", block) for block in encoded_blocks)
-        return result
+        return result.rstrip(b'\x00')
 
 
     def Encrypt(self, plain_text: bytes, key: bytes | bytearray) -> bytes:
@@ -358,5 +358,5 @@ cipher_text2 = DES.Encrypt(b"Informatika", random_key)      # input: "Informatik
 print("cipher byte:", cipher_text2)                         # output: encrypted text in bytes / hdex
 print("cipher hex: ", cipher_text2.hex())                   # output: encrypted text in hex
 
-print("encrypted: ", DES.Decrypt(cipher_text = cipher_text2))  # output: 'Informatika\x00\x00\x00\x00\x00' (padding \x00 )
+print("decrypted: ", DES.Decrypt(cipher_text = cipher_text2))  # output: 'Informatika\x00\x00\x00\x00\x00' (padding \x00 )
 # output with padding \x00 because input is not multiple of 8 bytes or 64bits
