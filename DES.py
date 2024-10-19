@@ -225,7 +225,6 @@ class Des(__Random):
             # Get the 48 bits subkey based on PC2
             yield self.__permute(combined_key, 56, self.PERMUTED_CHOICE2)
 
-
     def __encode_block(self, data_block: int, key: tuple[int], encryption: bool) -> int:
         # Initial permute the 64 bits block (8 bytes) of plain text
         permuted_block = self.__permute(data_block, 64, self.INITIAL_PERMUTATION)
@@ -250,15 +249,30 @@ class Des(__Random):
 
         # Apply Final Permutation
         return self.__permute(combined_block, 64, self.INVERSE_PERMUTATION)
+    
 
+    def __Encode(self, block:bytes, key, encryption):
+        for k in key:
+            block = self.__encode_block(block, k, encryption)
+            encryption = not encryption
+        return block
 
-    def __ECB(self, blocks: list[int], keys: tuple[tuple[int, ...]], encryption) -> list[int]:
-        result: list[int] = []
+    def __ECB(self, blocks, key, encryption):
         for block in blocks:
-            for key in keys:
-                result.append( self.__encode_block(block, key, encryption)) 
+            yield self.__Encode(block, key, encryption)
+        
+    def __GenerateSubKeys(self):
+        k0, k1, k2 = self.__key[:8], self.__key[8:16], self.__key[16:]
+        if k1 == k2:
+            self.__key = k0
+            return tuple(self.__key_schedule(self.__key)),
 
-        return result
+        k2 = k2 or k0
+        if k1 == k0:
+            self.__key = k2
+            return tuple(self.__key_schedule(self.__key)),
+        
+        return tuple(tuple(self.__key_schedule(k)) for k in (k0, k1, k2))
     
     def __encrypt(self) -> bytes:
         # Slice message to be 8 bytes or 64 bits each per block
@@ -270,7 +284,7 @@ class Des(__Random):
             blocks.append(block)  
 
         # Generate 16 subkeys for encryptions    
-        self.__subkey = tuple(self.__key_schedule(self.__key)),
+        self.__subkey = self.__GenerateSubKeys()
 
         # Encrypt each blocks
         encoded_blocks = self.__ECB(blocks, self.__subkey, True)
@@ -292,7 +306,14 @@ class Des(__Random):
 
         result = b"".join(struct.pack(">Q", block) for block in encoded_blocks)
         return result.rstrip(b'\x00')
-
+    
+    def derive_keys(self, key):
+        key, = struct.unpack(">Q", key)
+        next_key = self.__permute(key, 64, self.PERMUTED_CHOICE1)
+        next_key = next_key >> 28, next_key & 0x0fffffff
+        for bits in self.SHIFTS:
+            next_key = self.__left_circular_shift(next_key[0], bits), self.__left_circular_shift(next_key[1], bits)
+            yield self.__permute(next_key[0] << 28 | next_key[1], 56, self.PERMUTED_CHOICE2)
 
     def Encrypt(self, plain_text: bytes, key: bytes | bytearray) -> bytes:
         if len(plain_text) % 8 != 0:
@@ -332,8 +353,21 @@ class Des(__Random):
             block = struct.unpack(">Q", block_bytes.ljust(8, b'\0'))[0] 
             blocks.append(block) 
 
+        # Determine how many keys
+        keys = None
+        k0, k1, k2 = key[:8], key[8:16], key[16:]
+        if k1 == k2:
+            key = k0
+            keys =  tuple(self.__key_schedule(key)),
+        k2 = k2 or k0
+        if k1 == k0:
+            key = k2
+            keys = tuple(self.__key_schedule(key)),
+        
+        if keys == None:
+            keys = tuple(tuple(self.__key_schedule(k)) for k in (k0, k1, k2))
+    
         # Decrypt each blocks using key
-        keys = tuple(self.__key_schedule(key)),
         encoded_blocks = self.__ECB(blocks, keys[::-1], False)
 
         result = b"".join(struct.pack(">Q", block) for block in encoded_blocks)
@@ -341,6 +375,7 @@ class Des(__Random):
 
 # Usage
 DES = Des()
+# Key must be 8 bytes or 16 bytes or 24 bytes (Triple DES Supported)
 random_key = DES.Random_Bytes(8) # generate random 64 bits or 8 bytes
 
 cipher_text1 = DES.Encrypt(b"HaloHalo", random_key)             # input: "HaloHalo" in bytes format
@@ -355,8 +390,8 @@ print("decrypted: ", DES.Decrypt(cipher_text = cipher_text1))                   
 print("decrypted2: ", DES.Decrypt_using_key(cipher_text = cipher_text1, key=random_key))  # output: HaloHalo  (supplied key)
 
 cipher_text2 = DES.Encrypt(b"Informatika", random_key)      # input: "Informatika" in bytes format
-print("cipher byte:", cipher_text2)                         # output: encrypted text in bytes / hdex
+print("cipher byte:", cipher_text2)                         # output: encrypted text in bytes
 print("cipher hex: ", cipher_text2.hex())                   # output: encrypted text in hex
 
-print("decrypted: ", DES.Decrypt(cipher_text = cipher_text2))  # output: 'Informatika\x00\x00\x00\x00\x00' (padding \x00 )
-# output with padding \x00 because input is not multiple of 8 bytes or 64bits
+print("decrypted: ", DES.Decrypt(cipher_text = cipher_text2))  
+# output: 'Informatika' (It has padding \x00 because it is not multiple of 8 bytes, But the padding will be automatically removed )

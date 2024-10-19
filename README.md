@@ -7,7 +7,8 @@ Johannes Daniswara Pratama
 ```python
 
 DES = Des()
-random_key = DES.Random_Bytes(8) # generate random 64 bits or 8 bytes
+# Key must be 8 bytes or 16 bytes or 24 bytes (Triple DES Supported)
+random_key = DES.Random_Bytes(8)
 
 cipher_text1 = DES.Encrypt(b"HaloHalo", random_key)   # input: "HaloHalo" in bytes format
 print("\nkey bytes: ", random_key)
@@ -23,7 +24,6 @@ cipher_text2 = DES.Encrypt(b"Informatika", random_key)     # input: "Informatika
 print("cipher byte:", cipher_text2)                        # output: encrypted text in bytes
 print("cipher hex: ", cipher_text2.hex())                  # output: encrypted text in hex
 
-print("encrypted: ", DES.Decrypt(cipher_text = cipher_text2))
-# output: 'Informatika\x00\x00\x00\x00\x00' (padding \x00 )
-# output with padding \x00 because input is not multiple of 8 bytes or 64bits
+print("decrypted: ", DES.Decrypt(cipher_text = cipher_text2))
+# output: 'Informatika' (It has padding \x00 because it is not multiple of 8 bytes, But the padding will be automatically removed )
 ```
